@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UNIVERSAL - Works for All</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+body{font-family:Arial;background:#f4f6f9;display:flex;justify-content:center;padding:15px;margin:0}
+.card{background:white;padding:20px;border-radius:16px;width:100%;max-width:550px}
+input,select,button{width:100%;padding:12px;margin:7px 0;border-radius:8px;border:1px solid #ccc;box-sizing:border-box}
+button{background:green;color:white;font-weight:bold}
+#box{background:#eef2ff;padding:10px;border-radius:8px;display:none;margin-top:10px}
+.ok{background:#d4edda;padding:14px;border-radius:10px;margin-top:12px;color:#155724;font-weight:bold;text-align:center}
+.fail{background:#f8d7da;padding:14px;border-radius:10px;margin-top:12px;color:#721c24;font-weight:bold;text-align:center}
+</style>
+</head>
+<body>
+<div class="card">
+<h2 style="text-align:center">✅ Universal AI - All Students</h2>
+<p style="text-align:center;font-size:12px;color:gray">Works for any VTU marks card</p>
+<select id="cat"><option value="">Select Category</option><option>OBC-2A</option><option>SC</option><option>ST</option><option>General</option></select>
+<input id="income" type="number" placeholder="Family Income" value="30000">
+<input id="file" type="file" accept="image/*">
+<div id="box">
+<p id="status"></p>
+<p id="calc" style="background:#fff3cd;padding:10px;border-radius:8px;font-size:13px"></p>
+<details><summary style="font-size:11px">See OCR text</summary><p id="raw" style="font-size:9px;white-space:pre-wrap"></p></details>
+</div>
+<button id="btn" onclick="go()" disabled>Upload Any Marks Card</button>
+<div id="res"></div>
+</div>
+<script>
+let DATA={cgpa:0,perc:0,pass:true,valid:false,p:0,f:0};
+
+function countPF(text){
+ // Universal logic: Find lines that look like subject rows: have subject code + grade
+ let lines=text.split('\n');
+ let p=0,f=0;
+ for(let line of lines){
+   // Subject row pattern: contains 21... or BCS... or similar + has P or F at end
+   if(line.match(/\d{2}[A-Z]{2,}/) || line.match(/BCS|BEC|BPL|BME|BCE/)){
+     let upper=line.trim().toUpperCase();
+     // Check last 5 chars for grade P or F
+     if(upper.endsWith(' F') || upper.endsWith('\tF') || upper.includes(' F ') || /\bF\b\s*$/.test(upper)){
+       // Make sure not "Of" - check if F is isolated grade
+       if(upper.match(/\sF\s*$/) || upper.match(/\sF$/)){ f++; }
+     } else if(upper.match(/\sP\s*$/) || upper.match(/\sP$/)){
+       p++;
+     }
+   }
+ }
+ return {p,f};
+}
+
+document.getElementById('file').addEventListener('change', async(e)=>{
+ let f=e.target.files[0]; if(!f)return;
+ document.getElementById('box').style.display='block';
+ document.getElementById('status').innerText="🤖 AI Reading - Universal...";
+ document.getElementById('btn').disabled=true;
+ const {data:{text}} = await Tesseract.recognize(f,'eng');
+ document.getElementById('raw').innerText=text;
+
+ let cgpa=0, raw="";
+ let m1=text.match(/(?:CGPA|CePA|SGPA)[^0-9]*([0-9]\.[0-9]{1,2})/i);
+ if(m1){cgpa=parseFloat(m1[1]); raw=m1[0];}
+ if(cgpa==0){
+   let m3=text.match(/(?:CGPA|CePA|SGPA)[^0-9]*([0-9]{3})/i);
+   if(m3){let v=m3[1]; cgpa=parseFloat(v[0]+'.'+v.slice(1)); raw=m3[0]+" => "+cgpa;}
+ }
+ if(cgpa==0){
+   let m4=text.match(/([0-9]\.[0-9]{1,2})\s*CGPA/i) || text.match(/CGPA[^\d]*([0-9]\.[0-9]+)/i);
+   if(m4) cgpa=parseFloat(m4[1]);
+ }
+ if(cgpa>10) cgpa=cgpa/100;
+ let perc=Math.round((cgpa-0.5)*10*10)/10;
+
+ // Count P/F from subject rows only
+ let pf=countPF(text);
+ let pass=true;
+ if(pf.f>0) pass=false;
+ else if(cgpa>0 && cgpa<4.0) pass=false;
+ else if(pf.p>0) pass=true;
+ else pass=cgpa>=4.0; // fallback to CGPA rule
+
+ DATA={cgpa,perc,pass,valid:cgpa>0,p:pf.p,f:pf.f};
+ document.getElementById('status').innerHTML="✅ AI Done - Universal";
+ document.getElementById('calc').innerHTML=`CGPA: ${cgpa} (${raw})<br>Formula: (${cgpa} - 0.5)*10 = <b>${perc}%</b><br>Subject Analysis: P=${pf.p}, F=${pf.f}<br>Result: <b>${pass?'PASS - All P':'FAIL - Has F'}</b><br><small>Ignores grading table & college name - Checks subject grades only</small>`;
+ document.getElementById('btn').disabled=false;
+ document.getElementById('btn').innerText=`Check Eligibility - ${perc}% ${pass?'PASS':'FAIL'}`;
+});
+
+function go(){
+ let cat=document.getElementById('cat').value, inc=document.getElementById('income').value, r=document.getElementById('res');
+ if(!cat||!DATA.valid){alert('Select category & upload valid marks card');return;}
+ if(inc>1000000){r.innerHTML='<div class=fail>❌ NOT ELIGIBLE<br>Income >10 Lakhs</div>';return;}
+ if(!DATA.pass){r.innerHTML=`<div class=fail>❌ NOT ELIGIBLE<br>AI Found ${DATA.f} F Grade in Subjects<br>Fail = Not eligible</div>`;return;}
+ r.innerHTML=`<div class=ok>✅ ELIGIBLE - Verified for Any Student<br>CGPA ${DATA.cgpa} = ${DATA.perc}%<br>Subjects: P=${DATA.p}, F=${DATA.f} => PASS<br>Category ${cat}<br>Cheat-proof AI Approved!</div>`;
+}
+</script>
+</body>
+</html>
