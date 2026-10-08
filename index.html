@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VTU Scholarship Eligibility</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;font-family:'Poppins',Arial}
+body{margin:0;min-height:100vh;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;justify-content:center;align-items:center;padding:15px}
+.card{background:rgba(255,255,255,.95);width:100%;max-width:480px;padding:28px;border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+h1{margin:0;text-align:center;font-size:24px;color:#333}
+.sub{text-align:center;color:#666;font-size:13px;margin:6px 0 18px}
+input,select{width:100%;padding:14px 16px;margin:8px 0;border:2px solid #e0e0e0;border-radius:14px;font-size:14px;outline:none}
+input:focus,select:focus{border-color:#667eea}
+button{width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:700;font-size:15px;cursor:pointer;margin-top:12px}
+.hide{display:none}
+.badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#e8f0fe;color:#1a73e8}
+.ok{background:linear-gradient(135deg,#e6f4ea,#c8e6c9);border:2px solid #4caf50;color:#1b5e20;padding:20px;border-radius:16px;text-align:center;font-weight:700;margin-top:20px}
+.no{background:linear-gradient(135deg,#fce8e6,#f8bbd0);border:2px solid #f44336;color:#b71c1c;padding:20px;border-radius:16px;text-align:center;font-weight:700;margin-top:20px}
+.row{display:flex;gap:10px}.row>div{flex:1}
+.infoBox{background:#f8f9ff;border:1px dashed #667eea;padding:12px;border-radius:12px;font-size:12px;margin-top:12px}
+.otpBox{background:#fff3cd;padding:12px;border-radius:12px;text-align:center;margin-top:10px;font-size:13px}
+.top{display:flex;justify-content:space-between;align-items:center}
+</style>
+</head>
+<body>
+<div class="card">
+
+<div id="loginPage">
+<h1>🎓 VTU Scheme Portal</h1>
+<p class="sub">Email OTP Login - College Project</p>
+<input id="email" type="email" placeholder="Enter your email">
+<button onclick="sendOTP()">Send OTP</button>
+<div id="loginMsg"></div>
+<div id="otpArea" class="hide">
+<div class="otpBox" id="otpShow"></div>
+<input id="otpInput" type="number" placeholder="Enter 6-digit OTP">
+<button onclick="verifyOTP()">Verify & Login</button>
+</div>
+</div>
+
+<div id="dashPage" class="hide">
+<div class="top"><h1 style="font-size:20px">Eligibility Check</h1><button onclick="logout()" style="width:auto;padding:6px 14px;font-size:12px;background:#ef5350;margin:0">Logout</button></div>
+<p id="userEmail" style="text-align:center;font-size:12px;color:#666"></p>
+
+<div class="row">
+<div><label style="font-size:12px;font-weight:600">Category</label>
+<select id="caste"><option value="">Select</option><option>SC</option><option>ST</option><option>OBC - 2A</option><option>OBC - 3A</option><option>OBC - 3B</option><option>General</option></select></div>
+<div><label style="font-size:12px;font-weight:600">Income ₹</label>
+<input id="income" type="number" placeholder="Ex: 45000"></div>
+</div>
+
+<div class="row">
+<div><label style="font-size:12px;font-weight:600">CGPA (0-10)</label>
+<input id="cgpa" type="number" step="0.01" placeholder="Ex: 7.65" oninput="calcPer()"></div>
+<div><label style="font-size:12px;font-weight:600">Percentage</label>
+<input id="per" type="text" placeholder="Auto" disabled style="background:#f5f5f5"></div>
+</div>
+
+<div class="row">
+<div><label style="font-size:12px;font-weight:600">Backlogs</label>
+<select id="backlog"><option value="0">0 - All Clear</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4+</option></select></div>
+<div><label style="font-size:12px;font-weight:600">Year</label>
+<select id="year"><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option></select></div>
+</div>
+
+<input id="college" type="text" placeholder="College Name - Ex: VTU Belgaum">
+
+<button onclick="checkEligibility()">✨ Check Eligibility</button>
+<div id="result"></div>
+
+<div class="infoBox">
+<b>Rules:</b> Income <10L, Backlog=0, CGPA>=5.0
+</div>
+</div>
+
+</div>
+
+<script>
+let OTP="";
+function sendOTP(){
+ let e=document.getElementById('email').value.trim();
+ if(!e.includes('@')){ document.getElementById('loginMsg').innerHTML='<div class=no style="padding:10px">Enter valid email</div>'; return; }
+ OTP=""+Math.floor(100000+Math.random()*900000);
+ localStorage.setItem('otp',OTP); localStorage.setItem('email',e);
+ document.getElementById('otpArea').classList.remove('hide');
+ document.getElementById('loginMsg').innerHTML='<div class=ok style="padding:10px">OTP sent to '+e+'</div>';
+ document.getElementById('otpShow').innerHTML='Demo OTP:<br><b style="font-size:26px;color:#764ba2">'+OTP+'</b>';
+}
+function verifyOTP(){
+ if(document.getElementById('otpInput').value.trim()===localStorage.getItem('otp')){
+  localStorage.setItem('logged','yes'); showDash();
+ } else { document.getElementById('loginMsg').innerHTML='<div class=no style="padding:10px">Wrong OTP. Is '+localStorage.getItem('otp')+'</div>'; }
+}
+function showDash(){
+ document.getElementById('loginPage').classList.add('hide');
+ document.getElementById('dashPage').classList.remove('hide');
+ document.getElementById('userEmail').innerHTML='<span class=badge>'+localStorage.getItem('email')+'</span>';
+}
+function logout(){ localStorage.clear(); location.reload(); }
+if(localStorage.getItem('logged')==='yes') showDash();
+function calcPer(){
+ let cg=parseFloat(document.getElementById('cgpa').value);
+ if(cg>=0 && cg<=10){ document.getElementById('per').value=((cg-0.5)*10).toFixed(2)+' %'; }
+}
+function checkEligibility(){
+ let caste=document.getElementById('caste').value;
+ let income=parseInt(document.getElementById('income').value||0);
+ let cgpa=parseFloat(document.getElementById('cgpa').value||0);
+ let backlog=parseInt(document.getElementById('backlog').value);
+ let r=document.getElementById('result');
+ if(!caste||!income||!cgpa){ r.innerHTML='<div class=no>Fill Caste, Income & CGPA</div>'; return; }
+ let per=(cgpa-0.5)*10; let reasons=[]; let ok=true;
+ if(income>1000000){ ok=false; reasons.push('Income >10L'); }
+ if(backlog>0){ ok=false; reasons.push(backlog+' Backlog(s)'); }
+ if(cgpa<5){ ok=false; reasons.push('CGPA <5.0'); }
+ if(ok){ r.innerHTML='<div class=ok>✅ ELIGIBLE<br>CGPA '+cgpa+' ('+per.toFixed(2)+'%)<br>Income ₹'+income.toLocaleString()+'<br>All Clear</div>'; }
+ else { r.innerHTML='<div class=no>❌ NOT ELIGIBLE<br>'+reasons.join('<br>')+'</div>'; }
+}
+</script>
+</body>
+</html>
